@@ -10,9 +10,9 @@ require 'mina/git'
 #   repository   - Git repo to clone from. (needed by mina/git)
 #   branch       - Branch name to deploy. (needed by mina/git)
 
-set :domain, 'foobar.com'
-set :deploy_to, '/var/www/foobar.com'
-set :repository, 'git://...'
+set :domain, 'localhost:3000'
+set :deploy_to, '/Users/apple/Desktop/test_app'
+set :repository, 'git@github.com:rajshekarsv3/test_app.git'
 set :branch, 'master'
 
 # For system-wide RVM install.
