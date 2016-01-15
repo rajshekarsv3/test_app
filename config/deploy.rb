@@ -79,7 +79,7 @@ task :deploy => :environment do
     to :launch do
       queue "mkdir -p #{deploy_to}/#{current_path}/tmp/"
       queue "touch #{deploy_to}/#{current_path}/tmp/restart.txt"
-      invoke :'puma:restart'
+      invoke :'puma:start'
     end
 
   end
@@ -96,7 +96,7 @@ namespace :puma do
   desc "Start the application"
   task :start do
     queue 'echo "-----> Start Puma"'
-    queue "cd #{deploy_to}/#{current_path} && RAILS_ENV=#{stage} && bin/puma.sh start #{stage}"
+    queue "cd #{deploy_to}/#{current_path} && RAILS_ENV=#{stage} && rails s #{stage}"
   end
 
   desc "Stop the application"
