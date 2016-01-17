@@ -124,7 +124,7 @@ namespace :docker do
 
   task :build do
     queue "echo 'cd #{deploy_to}/#{current_path}'"
-    queue "cd /home/deployer/apps/test_app/releases/11"
+    queue 'cd #{deploy_to}/#{current_path}'
     queue "sudo docker build   -t rajshekarsv3/test:v2 ."
   end
 
