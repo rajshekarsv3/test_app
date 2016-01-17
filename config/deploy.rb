@@ -10,11 +10,11 @@ require 'mina/rvm'    # for rvm support. (http://rvm.io)
 #   repository   - Git repo to clone from. (needed by mina/git)
 #   branch       - Branch name to deploy. (needed by mina/git)
 
-set :domain, '192.81.221.121'
-set :user, "root"
+set :domain, '104.236.45.194'
+set :user, "deployer"
 set :rails_env,'production'
-set :deploy_to, '/apps/test_app'
-set :repository, 'git@github.com:rajshekarsv3/test_app.git'
+set :deploy_to, '/home/deployer/apps/test_app'
+set :repository, 'https://github.com/rajshekarsv3/test_app.git'
 set :branch, 'master'
 set :stage, 'production'
 set :term_mode, :nil
@@ -24,7 +24,7 @@ set :term_mode, :nil
 
 # Manually create these paths in shared/ (eg: shared/config/database.yml) in your server.
 # They will be linked in the 'deploy:link_shared_paths' step.
-set :shared_paths, ['config/database.yml', 'log']
+set :shared_paths, ['config/database.yml','config/secrets.yml', 'log']
 
 # Optional settings:
 #   set :user, 'foobar'    # Username in the server to SSH to.
@@ -39,7 +39,7 @@ task :environment do
   # invoke :'rbenv:load'
 
   # For those using RVM, use this to load an RVM version@gemset.
-  set :rvm_path, '/usr/local/rvm/scripts/rvm'
+  #set :rvm_path, '/usr/local/rvm/scripts/rvm'
   invoke :'rvm:use[ruby-2.2.1]'
 end
 
@@ -72,7 +72,7 @@ task :deploy => :environment do
     # Put things that will set up an empty directory into a fully set-up
     # instance of your project.
     invoke :'git:clone'
-    invoke :'deploy:link_shared_paths'
+    invoke :'deploy:link_shared_paths' 
     invoke :'bundle:install'
     invoke :'deploy:cleanup'
 
@@ -96,6 +96,7 @@ namespace :puma do
   desc "Start the application"
   task :start do
     queue 'echo "-----> Start Puma"'
+    queue %[chmod +x "#{deploy_to}/#{current_path}/bin/puma.sh"]
     queue "cd #{deploy_to}/#{current_path} && RAILS_ENV=#{stage} && bin/puma.sh start #{stage}"
   end
 
@@ -107,7 +108,8 @@ namespace :puma do
 
   desc "Restart the application"
   task :restart do
-    queue 'echo "-----> Restart Puma"'
+    queue 'echo "-----> Restart Puma" #{deploy_to}/#{current_path}/#{shared_path}'
+    queue %[chmod +x "#{deploy_to}/#{current_path}/bin/puma.sh"]
     queue "cd #{deploy_to}/#{current_path} && RAILS_ENV=#{stage} && bin/puma.sh restart #{stage}"
   end
 
