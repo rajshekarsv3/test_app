@@ -17,14 +17,13 @@ set :deploy_to, '/home/deployer/apps/test_app'
 set :repository, 'https://github.com/rajshekarsv3/test_app.git'
 set :branch, 'master'
 set :stage, 'production'
-set :term_mode, :nil
 
 # For system-wide RVM install.
 #set :rvm_path, '/usr/local/rvm/bin/rvm'
 
 # Manually create these paths in shared/ (eg: shared/config/database.yml) in your server.
 # They will be linked in the 'deploy:link_shared_paths' step.
-set :shared_paths, ['config/database.yml','config/secrets.yml', 'log']
+set :shared_paths, [ 'log']
 
 # Optional settings:
 #   set :user, 'foobar'    # Username in the server to SSH to.
@@ -77,9 +76,12 @@ task :deploy => :environment do
     invoke :'deploy:cleanup'
 
     to :launch do
-      queue "mkdir -p #{deploy_to}/#{current_path}/tmp/"
-      queue "touch #{deploy_to}/#{current_path}/tmp/restart.txt"
-      invoke :'puma:restart'
+       invoke :'docker:build' 
+       invoke :'docker:stop' # stop the previous container
+       invoke :'docker:run' # run new container with released code
+      # queue "mkdir -p #{deploy_to}/#{current_path}/tmp/"
+      # queue "touch #{deploy_to}/#{current_path}/tmp/restart.txt"
+      #invoke :'puma:restart'
     end
 
   end
@@ -97,7 +99,7 @@ namespace :puma do
   task :start do
     queue 'echo "-----> Start Puma"'
     queue %[chmod +x "#{deploy_to}/#{current_path}/bin/puma.sh"]
-    queue "cd #{deploy_to}/#{current_path} && RAILS_ENV=#{stage} && bin/puma.sh start #{stage}"
+    queue "cd #{deploy_to}/#{current_path} && RAILS_ENV=#{stage} && bin/puma.sh start #{stage} -p 80 -d"
   end
 
   desc "Stop the application"
@@ -110,8 +112,37 @@ namespace :puma do
   task :restart do
     queue 'echo "-----> Restart Puma" #{deploy_to}/#{current_path}/#{shared_path}'
     queue %[chmod +x "#{deploy_to}/#{current_path}/bin/puma.sh"]
-    queue "cd #{deploy_to}/#{current_path} && RAILS_ENV=#{stage} && bin/puma.sh restart #{stage}"
+    queue "cd #{deploy_to}/#{current_path} && RAILS_ENV=#{stage} && bin/puma.sh restart #{stage} -p 80 -d"
   end
 
+end
+
+
+
+namespace :docker do
+  desc "Build docker image"
+
+  task :build do
+    queue "echo 'cd #{deploy_to}/#{current_path}'"
+    queue "cd /home/deployer/apps/test_app/releases/11"
+    queue "sudo docker build   -t rajshekarsv3/test:v2 ."
+  end
+
+  desc "Start docker container"
+  task :run do
+    queue "sudo docker run -d -p 81:3000 --name testapp rajshekarsv3/test:v2"
+  end
+
+  
+
+  desc "Stop docker container"
+  task :stop do
+    queue "if [ ! -z \"$(sudo docker ps | grep 'testapp')\" ]; then sudo docker stop testapp; sudo docker rm -f testapp; fi"
+  end
+
+  desc "Remove all stop container"
+  task :clean_containers do
+    queue "sudo docker rm $(sudo docker ps -a -q)"
+  end
 end
 
